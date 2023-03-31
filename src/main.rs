@@ -13,6 +13,10 @@ struct CLI {
     /// Path for stock files.
     #[clap(short, long = "dir", required = true)]
     dir: String,
+
+    /// Maximum number of tables to be dumped.
+    #[clap(short, long = "max-tables", required = true)]
+    max_tables: i32,
 }
 
 #[tokio::main]
@@ -32,7 +36,11 @@ async fn main() -> Result<()> {
     verify_connection(&client).await?;
 
     let paths = fs::read_dir(&cli.dir).unwrap();
-    for path in paths {
+    for (dump_count, path) in paths.enumerate() {
+        if cli.max_tables > 0 && dump_count > cli.max_tables.try_into().unwrap() {
+            break;
+        }
+
         let path = path.unwrap().path();
         let file_name = path.file_name().unwrap().to_str().unwrap();
         println!("Reading {file_name}...");
